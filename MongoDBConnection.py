@@ -5,12 +5,13 @@ import pymongo
 from datetime import datetime, timedelta
 import time
 
-DBName = "test" #Use this to change which Database we're accessing
-connectionURL = "[DatabaseURL]@[Database]" #Put your database URL here
-sensorTable = "sensor data table" #Change this to the name of your sensor data table
+DBName = "CECES327" #Use this to change which Database we're accessing
+connectionURL = "mongodb+srv://kayk:kalynn@ceces327.u6aqfg1.mongodb.net/" #Put your database URL here
+sensorTable = "test.traffic data_metadata" #Change this to the name of your sensor data table
 
 def QueryToList(query):
-  pass; #TODO: Convert the query that you get in this function to a list and return it
+	return list(query)  # Convert the MongoDB cursor to a list
+#   pass; #TODO: Convert the query that you get in this function to a list and return it
   #HINT: MongoDB queries are iterable
 
 def QueryDatabase() -> []:
@@ -33,7 +34,7 @@ def QueryDatabase() -> []:
 		sensorTable = db[sensorTable]
 		print("Table:", sensorTable)
 		#We convert the cursor that mongo gives us to a list for easier iteration.
-		timeCutOff = datetime.now() - timedelta(minutes=0) #TODO: Set how many minutes you allow
+		timeCutOff = datetime.now() - timedelta(minutes=10) #TODO: Set how many minutes you allow
 
 		oldDocuments = QueryToList(sensorTable.find({"time":{"$gte":timeCutOff}}))
 		currentDocuments = QueryToList(sensorTable.find({"time":{"$lte":timeCutOff}}))

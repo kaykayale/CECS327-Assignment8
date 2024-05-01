@@ -35,8 +35,35 @@ def GetServerData() -> []:
 
 
 
-def ListenOnTCP(tcpSocket: socket.socket, socketAddress):
-    pass; #TODO: Implement TCP Code, use GetServerData to query the database.
+def ListenOnTCP(tcpSocket, socketAddress):
+    print(f"Connected to {socketAddress}")
+    try:
+        while True:
+            data = tcpSocket.recv(maxPacketSize)
+            if not data:
+                break  # No data, client might have disconnected
+            # Assume data is a simple command to fetch best freeway (for simplicity)
+            traffic_data = GetServerData()
+            current_time = time.time()
+            filtered_data = [
+                d for d in traffic_data if current_time - d['timestamp'] <= 300  # last 5 minutes
+            ]
+            freeway_times = {}
+            for data in filtered_data:
+                freeway = data['freeway_name']
+                if freeway in freeway_times:
+                    freeway_times[freeway].append(data['travel_time'])
+                else:
+                    freeway_times[freeway] = [data['travel_time']]
+            best_freeway = min(freeway_times, key=lambda k: sum(freeway_times[k]) / len(freeway_times[k]))
+            
+            response = f"The best freeway to take is {best_freeway}"
+            tcpSocket.sendall(response.encode())
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    finally:
+        tcpSocket.close()
+        print(f"Connection with {socketAddress} closed")
 
 
 

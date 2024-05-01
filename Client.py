@@ -6,8 +6,8 @@ import contextlib
 import errno
 
 maxPacketSize = 1024
-defaultPort = 0 # TODO: Change this to your expected port
-serverIP = '***.***.***.***' #TODO: Change this to your instance IP
+defaultPort = 6543 # TODO: Change this to your expected port
+serverIP = '35.202.88.245' #TODO: Change this to your instance IP
 
 tcpSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM);
 try:
@@ -25,6 +25,12 @@ while clientMessage != "exit":
     #TODO: Send the message to your server
     #TODO: Receive a reply from the server for the best highway to take
     #TODO: Print the best highway to take
-    
+    tcpSocket.sendall(clientMessage.encode())
+
+    # Receive a reply from the server for the best highway to take
+    serverResponse = tcpSocket.recv(maxPacketSize).decode()
+
+    # Print the best highway to take
+    print(f"Recommended freeway: {serverResponse}")
 tcpSocket.close();
 
