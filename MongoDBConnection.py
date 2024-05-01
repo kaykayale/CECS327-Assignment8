@@ -1,18 +1,18 @@
+import pymongo
 from pymongo import MongoClient, database
 import subprocess
 import threading
-import pymongo
 from datetime import datetime, timedelta
 import time
 
-DBName = "CECES327" #Use this to change which Database we're accessing
+# DBName = "CECES327" #Use this to change which Database we're accessing
+DBName = "test" #Use this to change which Database we're accessing
 connectionURL = "mongodb+srv://kayk:kalynn@ceces327.u6aqfg1.mongodb.net/" #Put your database URL here
-sensorTable = "test.traffic data_metadata" #Change this to the name of your sensor data table
+# sensorTable = 'Sensor Data'
+sensorTable = "traffic data" #Change this to the name of your sensor data table
 
 def QueryToList(query):
 	return list(query)  # Convert the MongoDB cursor to a list
-#   pass; #TODO: Convert the query that you get in this function to a list and return it
-  #HINT: MongoDB queries are iterable
 
 def QueryDatabase() -> []:
 	global DBName
@@ -30,21 +30,30 @@ def QueryDatabase() -> []:
 		db = client[DBName]
 		print("Database collections: ", db.list_collection_names())
 
-		#We first ask the user which collection they'd like to draw from.
+
 		sensorTable = db[sensorTable]
 		print("Table:", sensorTable)
-		#We convert the cursor that mongo gives us to a list for easier iteration.
-		timeCutOff = datetime.now() - timedelta(minutes=10) #TODO: Set how many minutes you allow
+		
+		timeCutOff = datetime.now() - timedelta(minutes=5)
 
-		oldDocuments = QueryToList(sensorTable.find({"time":{"$gte":timeCutOff}}))
-		currentDocuments = QueryToList(sensorTable.find({"time":{"$lte":timeCutOff}}))
+		docs = QueryToList(sensorTable.find({"time":{"$gte":timeCutOff}}))
 
-		print("Current Docs:",currentDocuments)
-		print("Old Docs:",oldDocuments)
+		if len(docs) == 0:
+			print("No recent data found, switching to general data.")
+			docs = QueryToList(sensorTable.find({"time":{"$lte":timeCutOff}}))
 
-		#TODO: Parse the documents that you get back for the sensor data that you need
-		#Return that sensor data as a list
+		sensor_data = []
+		for doc in docs:
+			payload = doc.get("payload", {})
+			if len(payload) > 3:
+				keys = list(payload.keys())
+				values = list(payload.values())
+				sensor_name = keys[3]
+				sensor_value = values[3]
+				sensor_data.append({"sensor_name": sensor_name, "sensor_value": int(sensor_value)})
 
+		print("Done parsing all data")
+		return sensor_data
 
 	except Exception as e:
 		print("Please make sure that this machine's IP has access to MongoDB.")
