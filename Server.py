@@ -10,15 +10,17 @@ import random
 import sys
 from collections import defaultdict
 
+
 maxPacketSize = 1024
 defaultPort = 6543 
 
 def GetFreePort(minPort: int = 1024, maxPort: int = 65535):
+    host = input("Please enter the host IP address...")
     for i in range(minPort, maxPort):
         print("Testing port",i);
         with contextlib.closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as potentialPort:
             try:
-                potentialPort.bind(('localhost', i));
+                potentialPort.bind((host, i));
                 potentialPort.close();
                 print("Server listening on port",i);
                 return i
@@ -68,10 +70,11 @@ def ListenOnTCP(tcpSocket: socket.socket, socketAddress):
         print("Connection closed.")
 
 def CreateTCPSocket() -> socket.socket:
+    host = input("Please enter the host IP address...")
     tcpSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     tcpPort = defaultPort
     print("TCP Port:",tcpPort)
-    tcpSocket.bind(('localhost', tcpPort))
+    tcpSocket.bind((host, tcpPort))
     return tcpSocket
 
 def LaunchTCPThreads():

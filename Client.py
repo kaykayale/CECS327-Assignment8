@@ -7,7 +7,7 @@ import errno
 
 maxPacketSize = 1024
 defaultPort = 6543 
-serverIP = '127.0.0.1'
+serverIP = (input("Please enter the host IP address..."))
 # serverIP = '35.202.88.245' #Change this to your instance IP
 
 tcpSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM);

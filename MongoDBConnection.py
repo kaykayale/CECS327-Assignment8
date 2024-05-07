@@ -4,6 +4,7 @@ import subprocess
 import threading
 from datetime import datetime, timedelta, timezone
 import time
+import certifi
 
 DBName = "test" 
 connectionURL = "mongodb+srv://kayk:kalynn@ceces327.u6aqfg1.mongodb.net/" 
@@ -23,7 +24,7 @@ def QueryDatabase() -> []:
 	db = None
 	try:
 		cluster = connectionURL
-		client = MongoClient(cluster)
+		client = MongoClient(cluster,tlsCAFile=certifi.where())
 		db = client[DBName]
 	
 		sensorTable = db["traffic data"]
@@ -32,11 +33,17 @@ def QueryDatabase() -> []:
 		timeCutOff = datetime.now(timezone.utc) - timedelta(minutes=5)
 
 		documents = QueryToList(sensorTable.find({"time":{"$gte":timeCutOff}}))
+
 		documents_meta = QueryToList(sensorTable_meta.find())
+
 
 		if len(documents) == 0:
 			print("No data found, converting to all data")
 			documents = QueryToList(sensorTable.find({"time":{"$lte":timeCutOff}}))
+			print(documents_meta)
+		else:
+			print("Data within the last 5 minutes")
+			print(documents_meta)
 
 		highway_lookup = {}
 		for doc_meta in documents_meta:
