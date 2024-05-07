@@ -33,28 +33,13 @@ def GetServerData() -> []:
 
 
 def SortSensors(sensors):
-    saved_sensors = {}
-
+    saved_sensors = defaultdict(list)
     for sensor in sensors:
-        if sensor["sensor_name"] not in saved_sensors:
-            saved_sensors[sensor["sensor_name"]] = []
-
         saved_sensors[sensor["sensor_name"]].append(sensor["sensor_value"])
-
-    return saved_sensors
+    return dict(saved_sensors)
 
 def BestHighway(highways):
-    best_highway = None
-    lowest_average_value = float('inf')
-
-    for highway, sensor_data in highways.items():
-        average_value = sum(sensor_data) / len(sensor_data)
-
-        if average_value < lowest_average_value:
-            lowest_average_value = average_value
-            best_highway = highway
-
-    return best_highway
+     return min(highways, key=lambda h: sum(highways[h]) / len(highways[h]), default=None)
 
 
 
