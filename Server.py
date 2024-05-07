@@ -4,10 +4,11 @@ import threading
 import time
 import contextlib
 import errno
+import json
 from dataclasses import dataclass
-from collections import defaultdict
 import random
 import sys
+from collections import defaultdict
 
 maxPacketSize = 1024
 defaultPort = 6543 
@@ -35,24 +36,36 @@ def GetServerData() -> []:
 def SortSensors(sensors):
     saved_sensors = defaultdict(list)
     for sensor in sensors:
-        saved_sensors[sensor["sensor_name"]].append(sensor["sensor_value"])
+        saved_sensors[sensor["highway_name"]].append(sensor["sensor_value"])
     return dict(saved_sensors)
 
 def BestHighway(highways):
-     return min(highways, key=lambda h: sum(highways[h]) / len(highways[h]), default=None)
-
-
+    if not highways:
+        return None  
+    return min(highways, key=lambda h: sum(highways[h]) / len(highways[h]))
 
 def ListenOnTCP(tcpSocket: socket.socket, socketAddress):
-    serverResponse = GetServerData()
-    print("Received Data!")
-    sortedSensors = SortSensors(serverResponse)
-    print(sortedSensors)
-    best_highway = BestHighway(sortedSensors)
-    tcpSocket.send(best_highway.encode())
-    tcpSocket.close()
-    pass
+    try:
+        with tcpSocket:
+            while True:
+                client_data = tcpSocket.recv(1024)
+                if not client_data:
+                    print("No data received. Closing connection.")
+                    break
+                server_response = GetServerData()
+                sorted_sensors = SortSensors(server_response)
+                best_highway = BestHighway(sorted_sensors)
+                data = {"Best Highway": best_highway}
+                json_data = json.dumps(data)
 
+                tcpSocket.sendall(json_data.encode())
+                print("Data sent to client.")
+
+    except socket.error as e:
+        print(f"Socket error occurred: {e}")
+
+    finally:
+        print("Connection closed.")
 
 def CreateTCPSocket() -> socket.socket:
     tcpSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -72,11 +85,3 @@ def LaunchTCPThreads():
 if __name__ == "__main__":
     tcpThread = threading.Thread(target=LaunchTCPThreads);
     tcpThread.start();
-
-    # try:
-    #     while not exitSignal:
-    #         time.sleep(1)
-    # except KeyboardInterrupt:
-    #     exitSignal = True  # Set exitSignal to True to stop the loop
-
-    # print("Ending program by exit signal...")

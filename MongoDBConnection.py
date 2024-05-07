@@ -2,17 +2,14 @@ import pymongo
 from pymongo import MongoClient, database
 import subprocess
 import threading
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import time
 
-# DBName = "CECES327" #Use this to change which Database we're accessing
-DBName = "test" #Use this to change which Database we're accessing
-connectionURL = "mongodb+srv://kayk:kalynn@ceces327.u6aqfg1.mongodb.net/" #Put your database URL here
-# sensorTable = 'Sensor Data'
-sensorTable = "traffic data" #Change this to the name of your sensor data table
+DBName = "test" 
+connectionURL = "mongodb+srv://kayk:kalynn@ceces327.u6aqfg1.mongodb.net/" 
 
 def QueryToList(query):
-	return list(query)  # Convert the MongoDB cursor to a list
+	return list(query)  
 
 def QueryDatabase() -> []:
 	global DBName
@@ -28,35 +25,40 @@ def QueryDatabase() -> []:
 		cluster = connectionURL
 		client = MongoClient(cluster)
 		db = client[DBName]
-		print("Database collections: ", db.list_collection_names())
-
-
-		sensorTable = db[sensorTable]
-		print("Table:", sensorTable)
+	
+		sensorTable = db["traffic data"]
+		sensorTable_meta = db["traffic data_metadata"]
 		
-		timeCutOff = datetime.now() - timedelta(minutes=5)
+		timeCutOff = datetime.now(timezone.utc) - timedelta(minutes=5)
 
-		docs = QueryToList(sensorTable.find({"time":{"$gte":timeCutOff}}))
+		documents = QueryToList(sensorTable.find({"time":{"$gte":timeCutOff}}))
+		documents_meta = QueryToList(sensorTable_meta.find())
 
-		if len(docs) == 0:
-			print("No recent data found, switching to general data.")
-			docs = QueryToList(sensorTable.find({"time":{"$lte":timeCutOff}}))
+		if len(documents) == 0:
+			print("No data found, converting to all data")
+			documents = QueryToList(sensorTable.find({"time":{"$lte":timeCutOff}}))
 
+		highway_lookup = {}
+		for doc_meta in documents_meta:
+			asset_uid = doc_meta.get("assetUid")
+			event_types = doc_meta.get("eventTypes", [])
+			if event_types:
+				device = event_types[0][0].get("device", {})
+				highway_name = device.get("name", "").replace(" Device", "")
+				highway_lookup[asset_uid] = highway_name
 		sensor_data = []
-		for doc in docs:
-			payload = doc.get("payload", {})
-			if len(payload) > 3:
-				keys = list(payload.keys())
-				values = list(payload.values())
-				sensor_name = keys[3]
-				sensor_value = values[3]
-				sensor_data.append({"sensor_name": sensor_name, "sensor_value": int(sensor_value)})
-
-		print("Done parsing all data")
+		for doc in documents:
+			sensor_payload = doc.get("payload", {})
+			sensor_values = list(sensor_payload.values())
+			if len(sensor_values) == 4:
+				sensor_id = sensor_values[2]
+				sensor_value = sensor_values[3]
+				highway_name = highway_lookup.get(sensor_id, "Unknown Highway")
+				sensor_data.append({"highway_name": highway_name, "sensor_value": int(sensor_value)})
+		print("Task completed")
 		return sensor_data
 
 	except Exception as e:
 		print("Please make sure that this machine's IP has access to MongoDB.")
 		print("Error:",e)
 		exit(0)
-
